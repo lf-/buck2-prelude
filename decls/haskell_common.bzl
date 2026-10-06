@@ -39,10 +39,11 @@ def _deps_arg():
 def _compiler_flags_arg():
     return {
         "compiler_flags": attrs.list(
-            attrs.string(),
+            attrs.arg(),
             default = [],
             doc = """
     Flags to pass to the Haskell compiler when compiling this rule's sources.
+    Macros such as `$(location ...)` are expanded.
 """,
         ),
     }

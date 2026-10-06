@@ -203,7 +203,9 @@ def compile_args(ctx: AnalysisContext, link_style: LinkStyle, enable_profiling: 
         hidden = hidden_srcs,
     )
 
-    producing_indices = "-fwrite-ide-info" in ctx.attrs.compiler_flags
+    # `compiler_flags` are args (they may hold `$(location ...)`), which
+    # stringify as their quoted literal.
+    producing_indices = repr("-fwrite-ide-info") in [str(f) for f in ctx.attrs.compiler_flags]
 
     return CompileArgsInfo(
         result = CompileResultInfo(
