@@ -430,13 +430,24 @@ def _make_package(
     import_dirs = [mk_artifact_dir("hi", profiled) for profiled in hi.keys()]
     library_dirs = [mk_artifact_dir("lib", profiled) for profiled in hi.keys()]
 
+    # Re-exports go in `exposed-modules` as `M from <unit id>:M`: the
+    # installed-package format has no `reexported-modules` field (that is
+    # .cabal syntax), and ghc-pkg drops one with only a warning.
+    reexports = []
+    for module, dep in ctx.attrs.reexported_modules.items():
+        provider = dep.get(HaskellLibraryProvider)
+        if provider == None:
+            fail("reexported_modules: {} is not a Haskell library".format(dep.label))
+        libs = provider.prof_lib if enable_profiling else provider.lib
+        reexports.append("{} from {}:{}".format(module, libs[link_style].id, module))
+
     conf = [
         "name: " + pkgname,
         "version: 1.0.0",
         "id: " + pkgname,
         "key: " + pkgname,
         "exposed: False",
-        "exposed-modules: " + ", ".join(modules),
+        "exposed-modules: " + ", ".join(modules + reexports),
         "import-dirs:" + ", ".join(import_dirs),
         "depends: " + ", ".join([lib.id for lib in hlis]),
     ]
@@ -446,15 +457,6 @@ def _make_package(
             "extra-libraries: " + libname,
         ]
 
-    reexports = []
-    for module, dep in ctx.attrs.reexported_modules.items():
-        provider = dep.get(HaskellLibraryProvider)
-        if provider == None:
-            fail("reexported_modules: {} is not a Haskell library".format(dep.label))
-        libs = provider.prof_lib if enable_profiling else provider.lib
-        reexports.append("{} from {}:{}".format(module, libs[link_style].id, module))
-    if reexports:
-        conf.append("reexported-modules: " + ", ".join(reexports))
     pkg_conf = ctx.actions.write("pkg-" + artifact_suffix + ".conf", conf, has_content_based_path = False)
 
     db = ctx.actions.declare_output("db-" + artifact_suffix, has_content_based_path = False)
