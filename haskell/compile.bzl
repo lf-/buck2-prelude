@@ -186,6 +186,10 @@ def compile_args(ctx: AnalysisContext, link_style: LinkStyle, enable_profiling: 
     pre_args = pre.set.project_as_args("args")
     compile_args.add(cmd_args(pre_args, format = "-optP={}"))
 
+    # And to the C compiles GHC runs itself (`capi` and `foreign export`
+    # stubs), which see none of the `-optP`s.
+    compile_args.add(cmd_args(pre_args, format = "-optc={}"))
+
     if pkgname:
         compile_args.add(["-this-unit-id", pkgname])
 
