@@ -57,6 +57,7 @@ load(
     "@prelude//haskell:compile.bzl",
     "CompileResultInfo",
     "compile",
+    "has_haskell_srcs",
 )
 load(
     "@prelude//haskell:haskell_haddock.bzl",
@@ -437,10 +438,13 @@ def _make_package(
         "exposed: False",
         "exposed-modules: " + ", ".join(modules),
         "import-dirs:" + ", ".join(import_dirs),
-        "library-dirs:" + ", ".join(library_dirs),
-        "extra-libraries: " + libname,
         "depends: " + ", ".join([lib.id for lib in hlis]),
     ]
+    if lib:
+        conf += [
+            "library-dirs:" + ", ".join(library_dirs),
+            "extra-libraries: " + libname,
+        ]
 
     reexports = []
     for module, dep in ctx.attrs.reexported_modules.items():
@@ -564,7 +568,11 @@ def _build_haskell_lib(
 
     objfiles = _srcs_to_objfiles(ctx, compiled.objects, osuf)
 
-    if link_style == LinkStyle("shared"):
+    if not has_haskell_srcs(ctx):
+        # Re-exports alone: a package db entry, but no library to link.
+        libs = []
+        link_infos = LinkInfos(default = LinkInfo())
+    elif link_style == LinkStyle("shared"):
         lib = ctx.actions.declare_output(lib_short_path, has_content_based_path = False)
         link = cmd_args(
             [haskell_toolchain.linker]
@@ -633,9 +641,9 @@ def _build_haskell_lib(
             False: non_profiling_hlib.compiled.hi,
         }
         library_artifacts = {
-            True: lib,
+            True: libs[0],
             False: non_profiling_hlib.libs[0],
-        }
+        } if libs else {}
         all_libs = libs + non_profiling_hlib.libs
         stub_dirs = [compiled.stubs] + [non_profiling_hlib.compiled.stubs]
     else:
@@ -643,8 +651,8 @@ def _build_haskell_lib(
             False: compiled.hi,
         }
         library_artifacts = {
-            False: lib,
-        }
+            False: libs[0],
+        } if libs else {}
         all_libs = libs
         stub_dirs = [compiled.stubs]
 

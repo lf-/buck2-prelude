@@ -223,6 +223,9 @@ def compile_args(ctx: AnalysisContext, link_style: LinkStyle, enable_profiling: 
         args_for_file = compile_args,
     )
 
+def has_haskell_srcs(ctx: AnalysisContext) -> bool:
+    return any([is_haskell_src(path) for path, _ in srcs_to_pairs(ctx.attrs.srcs)])
+
 # Compile all the context's sources.
 def compile(ctx: AnalysisContext, link_style: LinkStyle, enable_profiling: bool, pkgname: str | None = None) -> CompileResultInfo:
     haskell_toolchain = ctx.attrs._haskell_toolchain[HaskellToolchainInfo]
@@ -249,6 +252,14 @@ def compile(ctx: AnalysisContext, link_style: LinkStyle, enable_profiling: bool,
             compile_cmd.add(args.srcs)
 
     artifact_suffix = get_artifact_suffix(link_style, enable_profiling)
+
+    # A library of re-exports alone has nothing to compile, and GHC refuses to
+    # run without input files.
+    if not has_haskell_srcs(ctx):
+        for out in [args.result.objects, args.result.hi, args.result.stubs]:
+            ctx.actions.copied_dir(out.as_output(), {})
+        return args.result
+
     ctx.actions.run(
         compile_cmd,
         category = "haskell_compile_" + artifact_suffix.replace("-", "_"),
