@@ -183,6 +183,16 @@ haskell_library = prelude_rule(
             "haddock_flags": attrs.list(attrs.arg(), default = []),
             "linker_flags": attrs.list(attrs.arg(), default = []),
             "platform": attrs.option(attrs.string(), default = None),
+            "reexported_modules": attrs.dict(
+                key = attrs.string(),
+                value = attrs.dep(),
+                default = {},
+                doc = """
+    Modules of other Haskell libraries this one re-exports, as GHC's
+    `reexported-modules`: module name -> the library providing it, which must
+    also be in `deps`.
+""",
+            ),
         }
         | buck.licenses_arg()
         | buck.labels_arg()

@@ -441,6 +441,16 @@ def _make_package(
         "extra-libraries: " + libname,
         "depends: " + ", ".join([lib.id for lib in hlis]),
     ]
+
+    reexports = []
+    for module, dep in ctx.attrs.reexported_modules.items():
+        provider = dep.get(HaskellLibraryProvider)
+        if provider == None:
+            fail("reexported_modules: {} is not a Haskell library".format(dep.label))
+        libs = provider.prof_lib if enable_profiling else provider.lib
+        reexports.append("{} from {}:{}".format(module, libs[link_style].id, module))
+    if reexports:
+        conf.append("reexported-modules: " + ", ".join(reexports))
     pkg_conf = ctx.actions.write("pkg-" + artifact_suffix + ".conf", conf, has_content_based_path = False)
 
     db = ctx.actions.declare_output("db-" + artifact_suffix, has_content_based_path = False)
