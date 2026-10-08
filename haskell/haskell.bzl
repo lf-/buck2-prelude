@@ -407,6 +407,7 @@ def _make_package(
     ctx: AnalysisContext,
     link_style: LinkStyle,
     pkgname: str,
+    ghc_pkg_name: str,
     libname: str,
     hlis: list[HaskellLibraryInfo],
     hi: dict[bool, Artifact],
@@ -442,7 +443,7 @@ def _make_package(
         reexports.append("{} from {}:{}".format(module, libs[link_style].id, module))
 
     conf = [
-        "name: " + pkgname,
+        "name: " + ghc_pkg_name,
         "version: 1.0.0",
         "id: " + pkgname,
         "key: " + pkgname,
@@ -528,6 +529,7 @@ def _build_haskell_lib(
     ctx,
     libname: str,
     pkgname: str,
+    ghc_pkg_name: str,
     hlis: list[HaskellLinkInfo],  # haskell link infos from all deps
     nlis: list[MergedLinkInfo],  # native link infos from all deps
     link_style: LinkStyle,
@@ -662,6 +664,7 @@ def _build_haskell_lib(
         ctx,
         link_style,
         pkgname,
+        ghc_pkg_name,
         libstem,
         uniq_infos,
         import_artifacts,
@@ -670,7 +673,7 @@ def _build_haskell_lib(
     )
 
     hlib = HaskellLibraryInfo(
-        name = pkgname,
+        name = ghc_pkg_name,
         db = db,
         id = pkgname,
         import_dirs = import_artifacts,
@@ -712,6 +715,7 @@ def haskell_library_impl(ctx: AnalysisContext) -> list[Provider]:
 
     libname = repr(ctx.label.path).replace("//", "_").replace("/", "_") + "_" + ctx.label.name
     pkgname = libname.replace("_", "-")
+    ghc_pkg_name = ctx.attrs.ghc_pkg_name or pkgname
 
     # The non-profiling library is also needed to build the package with
     # profiling enabled, so we need to keep track of it for each link style.
@@ -727,6 +731,7 @@ def haskell_library_impl(ctx: AnalysisContext) -> list[Provider]:
                 ctx,
                 libname,
                 pkgname,
+                ghc_pkg_name,
                 hlis = hlis,
                 nlis = nlis,
                 link_style = link_style,
@@ -875,7 +880,7 @@ def haskell_library_impl(ctx: AnalysisContext) -> list[Provider]:
             shared_libs,
             shared_library_infos,
         ),
-        haskell_haddock_lib(ctx, pkgname),
+        haskell_haddock_lib(ctx, pkgname, ghc_pkg_name),
     ]
 
     if indexing_tsets:

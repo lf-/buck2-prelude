@@ -25,7 +25,7 @@ HaskellHaddockInfo = provider(
     },
 )
 
-def haskell_haddock_lib(ctx: AnalysisContext, pkgname: str) -> Provider:
+def haskell_haddock_lib(ctx: AnalysisContext, pkgname: str, ghc_pkg_name: str) -> Provider:
     haskell_toolchain = ctx.attrs._haskell_toolchain[HaskellToolchainInfo]
 
     iface = ctx.actions.declare_output("haddock-interface", has_content_based_path = False)
@@ -56,7 +56,7 @@ def haskell_haddock_lib(ctx: AnalysisContext, pkgname: str) -> Provider:
         "--odir",
         odir.as_output(),
         "--package-name",
-        pkgname,
+        ghc_pkg_name,
     )
 
     for lib in attr_deps(ctx):

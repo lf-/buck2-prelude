@@ -193,6 +193,18 @@ haskell_library = prelude_rule(
     also be in `deps`.
 """,
             ),
+            "ghc_pkg_name": attrs.option(
+                attrs.string(),
+                default = None,
+                doc = """
+    Overrides the GHC package name, which otherwise matches the unit id derived
+    from the target label. GHC resolves package-qualified imports
+    (`import "pkg" M`) by package name, so third-party libraries should set
+    this to their Hackage name (e.g. `"ansi-terminal"`). The unit id is
+    unaffected, but dependencies are exposed by name, so names should still be
+    unique among a library's transitive deps.
+""",
+            ),
         }
         | buck.licenses_arg()
         | buck.labels_arg()
